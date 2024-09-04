@@ -1,0 +1,108 @@
+#define MAX_LENGTH 10
+#define WIDTH 50
+#define HEIGHT 12
+
+#define SNAKE "@"
+#define WALL "#"
+#define FOOD "$"
+
+kprobe:pty_write // (struct tty_struct *tty, const unsigned char *buf, int c)
+/ arg2 == 1 /
+{
+    @key = *((int8*)arg1);
+}
+
+BEGIN {
+    @snakex[0] = 1;
+    @snakey[0] = 1;
+    @snakex[1] = 1;
+    @snakey[1] = 2;
+
+    @foodx = 4;
+    @foody = 4;
+
+    printf("\033[H\033[2J"); // clear screen
+}
+
+interval:ms:120 {
+    // moving (default direction = right)
+    // find snake's tail
+    $i = 0;
+    while ($i < MAX_LENGTH && @snakex[$i] != 0 && @snakey[$i] != 0) { $i++; }
+
+    $i--;
+    while ($i > 0) {
+        @snakex[$i] = @snakex[$i-1];
+        @snakey[$i] = @snakey[$i-1];
+        $i--;
+    }
+    if (@key == 65) {
+        // up
+        @snakex[0]--;
+    } else if (@key == 66) {
+        // down
+        @snakex[0]++;
+    } else if (@key == 68) {
+        // left
+        @snakey[0]--;
+    } else {
+        // right
+        @snakey[0]++;
+    }
+
+    // print the board
+    printf("\033[H"); // move cursor to top left
+    $x = 0;
+    unroll(12) {
+        $y = 0;
+        unroll(50) {
+            if ($x == 0 || $y == 0 || $x == HEIGHT-1 || $y == WIDTH-1) {
+                printf(WALL);
+            } else {
+                $char = " ";
+                if (@foodx == $x && @foody == $y) {
+                    $char = FOOD;
+                } else {
+                    $i = 0;
+                    while ($i < MAX_LENGTH) {
+                        if (@snakex[$i] == $x && @snakey[$i] == $y) {
+                            $char = SNAKE;
+                        }
+                        $i++;
+                    }
+                }
+                printf("%s", $char);
+            }
+            $y++;
+        }
+        printf("\n");
+        $x++;
+    }
+
+    // exit if the snake cross the boundaries
+    if (@snakex[0] == 0 || @snakex[0] == HEIGHT-1 || @snakey[0] == 0 || @snakey[0] == WIDTH-1) {
+        exit();
+    }
+
+    // exit if the snake cross over itself
+    $i = 1;
+    while($i < MAX_LENGTH && @snakex[$i] != 0 && @snakey[$i] != 0) {
+        if (@snakex[0] == @snakex[$i] && @snakey[0] == @snakey[$i]) {
+            exit();
+        }
+        $i++;
+    }
+
+    // eating food
+    if (@snakex[0] == @foodx && @snakey[0] == @foody) {
+        // generate coordinates for the new food
+        @foodx = (int64)(rand % 10) + 1;
+        @foody = (int64)(rand % 10) + 1;
+
+        // grow the snake
+        $i = 2;
+        while ($i < MAX_LENGTH && @snakex[$i] != 0 && @snakey[$i] != 0) { $i++; }
+        @snakex[$i] = @snakex[$i-1];
+        @snakey[$i] = @snakey[$i-1];
+    }
+}

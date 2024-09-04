@@ -106,3 +106,11 @@ interval:ms:120 {
         @snakey[$i] = @snakey[$i-1];
     }
 }
+
+END {
+    clear(@snakex);
+    clear(@snakey);
+    clear(@foodx);
+    clear(@foody);
+    clear(@key);
+}

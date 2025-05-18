@@ -5,7 +5,7 @@ a [bpftrace](https://github.com/bpftrace/bpftrace) implementation of snake game.
 
 ### requirements
 - linux 5.3+
-- [bpftrace](https://github.com/bpftrace/bpftrace/releases) latest version
+- [bpftrace](https://github.com/bpftrace/bpftrace) - build from master branch, as it uses unstable features (hygiene macros)
 
 ### how to run
 ```bash
